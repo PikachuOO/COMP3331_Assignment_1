@@ -45,7 +45,7 @@ public class ReadRequest extends Request{
 		}
 		lineSet.removeAll(readSet);
 		if (lineSet.size() == 0) {
-			return new MessageResponse("There are no posts here");
+			return new MessageResponse("There are no new posts here");
 		} else {
 			List<String> unreadPosts = new ArrayList<String>();
 			unreadPosts.add("Book by " + p.getBookName() + ", Page " + p.getPageNumber() + ", Line number " + this.lineNumber + ":\n");

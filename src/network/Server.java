@@ -53,10 +53,10 @@ public class Server {
 
 		public void run () {
 			//new thread runs here
-
+			String userName = "";
 			try {
 				//collect userName and print for log
-				String userName = this.inFromClient.readLine();
+				userName = this.inFromClient.readLine();
 				System.out.println("User " + userName + " connected");
 				this.outToClient.writeBytes("connection established\n");
 			} catch (IOException e1) {
@@ -88,7 +88,7 @@ public class Server {
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
-					System.out.println("Socket Disconnected");
+					System.out.println(userName + " Disconnected");
 					close();
 					return;
 				}
