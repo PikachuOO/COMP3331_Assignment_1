@@ -19,7 +19,7 @@ public class PostRequest extends Request{
 		super(userName);
 		this.book = book;
 		this.page = page;
-		this.line_number = Integer.parseInt(line_number);
+		this.line_number = Integer.parseInt(line_number)-1;
 		this.content = content;
 	}
 
@@ -28,7 +28,6 @@ public class PostRequest extends Request{
 		Page p = db.search(this.book, this.page);
 		DiscussionPost post = new DiscussionPost(db.generateSerialID(), this.userName, this.line_number, this.content);
 		p.addDiscussionPost(post);
-		System.out.println("process post");
 		return new MessageResponse("Post Successful");
 	}
 

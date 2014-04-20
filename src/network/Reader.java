@@ -7,7 +7,10 @@ package network;
  */
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 
+import model.Line;
 import model.Page;
 import request.DisplayRequest;
 import request.PostRequest;
@@ -33,6 +36,7 @@ public class Reader {
 			serverPort = Integer.parseInt(args[4]);
 		}
 		Page mostRecentPage = null;
+		List<Integer> readPosts = new ArrayList<Integer>();
 
 		TCP tcp = new TCP(serverName, serverPort);
 		tcp.outToServer.writeBytes(userName + '\n');
@@ -40,11 +44,12 @@ public class Reader {
 		while (!inFromUser.ready()) {
 			String clientRequest = inFromUser.readLine();
 			StringBuilder errorMessage = new StringBuilder();
-			Request request = createRequest(clientRequest, userName, mostRecentPage, errorMessage);
+			Request request = createRequest(clientRequest, userName, mostRecentPage, errorMessage, readPosts);
 			if (request == null) {
 				System.err.println(errorMessage.toString());
 			} else {
 				tcp.objectsOutToServer.writeObject(request);
+				tcp.objectsOutToServer.flush();
 				Object response = tcp.objectsInFromServer.readObject();
 				if (response instanceof DisplayResponse) {
 					mostRecentPage = ((DisplayResponse) response).getPage();
@@ -52,18 +57,16 @@ public class Reader {
 				System.out.println(response.toString());
 			}
 		}
-
 	}
 
-
-	private static Request createRequest (String clientRequest, String userName, Page mostRecentPage, StringBuilder errorMessage) {
+	private static Request createRequest (String clientRequest, String userName, Page mostRecentPage, StringBuilder errorMessage, List<Integer> readPosts) {
 		clientRequest = clientRequest.replaceAll("^ *", "").toLowerCase();
 		Request request = null;
 		if (clientRequest.startsWith("display")) {
 			if (clientRequest.split(" ").length < 3) {
 				errorMessage.append("Usage: display [bookName] [pageNumber]\n");
 			} else {
-				request = new DisplayRequest(userName, clientRequest.split(" ")[1], clientRequest.split(" ")[2]);
+				request = new DisplayRequest(userName, readPosts, clientRequest.split(" ")[1], clientRequest.split(" ")[2]);
 			}
 		}
 		else if (clientRequest.startsWith("post_to_forum")) {
@@ -79,9 +82,7 @@ public class Reader {
 			errorMessage.insert(0, "Usage: (display [bookName] [pageNumber] | post_to_forum [lineNumber] [content])\n");
 		}
 		return request;
-
 	}
-
 
 	private static class TCP {
 		private InetAddress serverIPAddress;

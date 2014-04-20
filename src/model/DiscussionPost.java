@@ -1,7 +1,10 @@
 package model;
 
-public class DiscussionPost {
+import java.io.Serializable;
+
+public class DiscussionPost implements Serializable{
 	
+	private static final long serialVersionUID = 1L;
 	private int serialID;
 	private int lineNumber;
 	private String userName;

@@ -5,6 +5,8 @@ import java.io.*;
 import java.net.*;
 
 import model.Ebook_db;
+import model.Line;
+import model.Page;
 import request.DisplayRequest;
 import request.PostRequest;
 import request.Request;
