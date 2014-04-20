@@ -14,8 +14,10 @@ import model.Line;
 import model.Page;
 import request.DisplayRequest;
 import request.PostRequest;
+import request.ReadRequest;
 import request.Request;
 import response.DisplayResponse;
+import response.ReadResponse;
 
 public class Reader {
 
@@ -26,7 +28,7 @@ public class Reader {
 		String serverName;
 		int serverPort;
 		if (args.length != 5) {
-			System.err.println("Incorrect number of args");
+			System.err.println("Usage: Reader [mode] [polling_interval] [userName] [serverName] [serverPort]\n");
 			return;
 		} else {
 			mode = args[0];
@@ -54,6 +56,9 @@ public class Reader {
 				if (response instanceof DisplayResponse) {
 					mostRecentPage = ((DisplayResponse) response).getPage();
 				}
+				if (response instanceof ReadResponse) {
+					readPosts = ((ReadResponse) response).getReadPosts();
+				}
 				System.out.println(response.toString());
 			}
 		}
@@ -66,7 +71,7 @@ public class Reader {
 			if (clientRequest.split(" ").length < 3) {
 				errorMessage.append("Usage: display [bookName] [pageNumber]\n");
 			} else {
-				request = new DisplayRequest(userName, readPosts, clientRequest.split(" ")[1], clientRequest.split(" ")[2]);
+				request = new DisplayRequest(clientRequest, userName, clientRequest.split(" ")[1], Integer.parseInt(clientRequest.split(" ")[2]), readPosts);
 			}
 		}
 		else if (clientRequest.startsWith("post_to_forum")) {
@@ -76,10 +81,21 @@ public class Reader {
 			else if (clientRequest.split(" ").length < 3) {
 				errorMessage.append("Usage: post_to_forum [lineNumber] [content]\n");
 			} else {
-				request = new PostRequest(userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], clientRequest.replaceAll("^\\w* \\w* ", ""));
+				request = new PostRequest(clientRequest, userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], clientRequest.replaceAll("^\\w* \\w* ", ""));
 			}
+		} 
+		else if (clientRequest.startsWith("read_post")) {
+			if (mostRecentPage == null) {
+				errorMessage.append("Please go to a page first before you post to it\n");
+			}
+			else if (clientRequest.split(" ").length < 2) {
+				errorMessage.append("Usage: read_post [lineNumber]\n");
+			} else {
+				request = new ReadRequest(clientRequest, userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], readPosts);
+			}
+			
 		} else {
-			errorMessage.insert(0, "Usage: (display [bookName] [pageNumber] | post_to_forum [lineNumber] [content])\n");
+			errorMessage.append("Usage: (display [bookName] [pageNumber] | post_to_forum [lineNumber] [content])\n");
 		}
 		return request;
 	}

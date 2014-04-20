@@ -16,78 +16,40 @@ import response.Response;
 public class DisplayRequest extends Request{
 
 	private static final long serialVersionUID = 1L;
-	private String bookName;
-	private String pageNumber;
-	private List<Integer> readPosts;
+	private final List<Integer> readPosts;
 
-	public DisplayRequest(String userName, List<Integer> readPosts, String bookName, String pageNumber) {
-		super(userName);
+	public DisplayRequest(String command, String userName, String bookName, int pageNumber, List<Integer> readPosts) {
+		super(command, userName, bookName, pageNumber);
 		this.readPosts = readPosts;
-		this.bookName = bookName;
-		this.pageNumber = pageNumber;
 	}
 
 	@Override
 	public Response process(Ebook_db db) {
 		Page p = db.search(bookName, pageNumber);
-		/*Page joyce3 = db.search("joyce", 3);
-		System.out.println("----------------------------");
-		for (Line l : joyce3.getLines()) {
-			System.out.println(l.getDiscussionPost().size());
-		}
-		System.out.println("----------------------------");
-		*/
 		if (p == null) {
-			return new MessageResponse("Book or page does not exist");
+			return new MessageResponse("Book and/or page does not exist");
 		}
 
 		List<Character> markList = new ArrayList<Character>(p.getLines().size());
 		
-		Set<Integer> read = new HashSet<Integer>(this.readPosts);
+		Set<Integer> setOfReadPosts = new HashSet<Integer>(this.readPosts);
 		for (Line l : p.getLines()) {
 			char mark;
 			if (l.getDiscussionPost().size() == 0) {
 				mark = ' ';
 			} else {
-				Set<Integer> s = new HashSet<Integer>();
+				Set<Integer> setOfLineDiscussionPosts = new HashSet<Integer>();
 				for (DiscussionPost post : l.getDiscussionPost()) {
-					s.add(post.getSerialID());
+					setOfLineDiscussionPosts.add(post.getSerialID());
 				}
-				if (read.containsAll(s)) {
+				if (setOfReadPosts.containsAll(setOfLineDiscussionPosts)) {
 					mark = 'm';
 				} else {
 					mark = 'n';
 				}
-				//s now conteains all ID of each
 			}
-			
-			
-			markList.add(mark);
-			
-			
+			markList.add(mark);	
 		}
-		
-		/*for (Line l : p.getLines()) {
-			char mark;
-			if (l.getDiscussionPost().size() == 0) {
-				mark = 'b';
-			} else {
-				mark = 'n';
-				for (DiscussionPost post : l.getDiscussionPost()) {
-					for (int readPostID : readPosts) {
-						if (post.getSerialID() == readPostID) {
-							mark = 'm';
-						}
-					}
-				}
-			}
-			markList.add(mark);
-		}*/
-
-		Response r = new DisplayResponse(p, markList);
-		//System.out.println(r.toString());
-		return r;
+		return new DisplayResponse(p, markList);
 	}
-
-
 }

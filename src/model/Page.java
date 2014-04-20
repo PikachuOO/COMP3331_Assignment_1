@@ -7,8 +7,8 @@ import java.util.List;
 public class Page implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private String book;
-	private int page;
+	private final String bookName;
+	private final int pageNumber;
 	private List<Line> lines;
 	
 	public Page(List<String> lines, String book, String page) {
@@ -16,8 +16,8 @@ public class Page implements Serializable {
 		for (int i = 0; i < lines.size(); i++) {
 			this.lines.add(new Line(i, lines.get(i)));
 		}
-		this.book = book;
-		this.page = Integer.parseInt(page);
+		this.bookName = book;
+		this.pageNumber = Integer.parseInt(page);
 	}
 	
 	public void addDiscussionPost(DiscussionPost post) {
@@ -33,11 +33,11 @@ public class Page implements Serializable {
 	}
 
 	public String getBookName() {
-		return this.book;
+		return this.bookName;
 	}
 
 	public int getPageNumber() {
-		return this.page;
+		return this.pageNumber;
 	}
 
 }

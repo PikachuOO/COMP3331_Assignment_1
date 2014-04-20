@@ -10,24 +10,22 @@ public class PostRequest extends Request{
 
 	private static final long serialVersionUID = 1L;
 	
-	private String book;
-	private int page;
-	private int line_number;
-	private String content;
+	private final int lineNumber;
+	private final String content;
 
-	public PostRequest(String userName, String book, int page, String line_number, String content) {
-		super(userName);
-		this.book = book;
-		this.page = page;
-		this.line_number = Integer.parseInt(line_number)-1;
+	public PostRequest(String command, String userName, String bookName, int pageNumber, String lineNumber, String content) {
+		super(command, userName, bookName, pageNumber);
+		this.lineNumber = Integer.parseInt(lineNumber)-1;
 		this.content = content;
 	}
 
 	@Override
 	public Response process(Ebook_db db) {
-		Page p = db.search(this.book, this.page);
-		DiscussionPost post = new DiscussionPost(db.generateSerialID(), this.userName, this.line_number, this.content);
-		p.addDiscussionPost(post);
+		Page p = db.search(this.bookName, this.pageNumber);
+		if (this.lineNumber >= p.getLines().size() || this.lineNumber <= 0) {
+			return new MessageResponse("Invalid Line Number");
+		}
+		p.addDiscussionPost(new DiscussionPost(db.generateSerialID(), this.userName, this.lineNumber, this.content));
 		return new MessageResponse("Post Successful");
 	}
 

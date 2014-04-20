@@ -9,6 +9,7 @@ import model.Line;
 import model.Page;
 import request.DisplayRequest;
 import request.PostRequest;
+import request.ReadRequest;
 import request.Request;
 import response.Response;
 
@@ -50,7 +51,7 @@ public class Server {
 		}
 
 		public void run () {
-			
+
 			try {
 				String userName = this.inFromClient.readLine();
 				System.out.println("User " + userName + " connected");
@@ -61,15 +62,18 @@ public class Server {
 			while (this.connectionSocket.isConnected()) {
 				try {
 					Object request = this.objectsInFromClient.readObject();
-					
-					if (request instanceof Request) {
+
+					if (request instanceof Request) {	//if client works properly, all objects should be requests
 						Response response = null;
-						if (request instanceof DisplayRequest) {
-							response = ((Request) request).process(db);
-						}
-						if (request instanceof PostRequest) {
-							response = ((Request) request).process(db);
-						}
+						
+						//server shows client activity
+						System.out.print("User " + ((Request) request).getUserName() + " requests: ");
+						System.out.println(((Request) request).getCommand());
+						
+						//requests process on their own and create their own response object
+						response = ((Request) request).process(db);
+						
+						//reply to client with the response
 						this.objectsOutToClient.writeObject(response);
 						this.objectsOutToClient.flush();
 					} else {
@@ -85,7 +89,7 @@ public class Server {
 				}
 			}
 		}
-		
+
 		private void close() {
 			try {
 				this.outToClient.close();

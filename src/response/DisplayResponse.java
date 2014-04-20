@@ -7,7 +7,7 @@ import model.Line;
 import model.Page;
 
 
-public class DisplayResponse extends Response{
+public class DisplayResponse implements Response{
 	
 	private static final long serialVersionUID = 1L;
 	private Page p;
@@ -29,7 +29,6 @@ public class DisplayResponse extends Response{
 			out.append(mark.get(i));
 			out.append(this.p.getLines().get(i).getLine() + '\n');
 		}
-		
 		
 		return out.toString();
 	}

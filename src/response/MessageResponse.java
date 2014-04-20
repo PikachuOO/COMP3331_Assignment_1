@@ -1,6 +1,6 @@
 package response;
 
-public class MessageResponse extends Response{
+public class MessageResponse implements Response{
 
 	private static final long serialVersionUID = 1L;
 	

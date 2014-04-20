@@ -5,10 +5,10 @@ import java.io.Serializable;
 public class DiscussionPost implements Serializable{
 	
 	private static final long serialVersionUID = 1L;
-	private int serialID;
-	private int lineNumber;
-	private String userName;
-	private String post;
+	private final int serialID;
+	private final int lineNumber;
+	private final String userName;
+	private final String post;
 	
 	
 	public DiscussionPost (int serialID, String userName, int lineNumber, String post) {
