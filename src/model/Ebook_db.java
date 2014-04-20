@@ -12,13 +12,14 @@ import java.util.Map;
 public class Ebook_db {
 
 	private List<Page> db;
-	private int serialID;
+	private int serialID;	//counter to give unique id to discussion posts
 
 	public Ebook_db() throws IOException {
-		File list = new File("Ebooks");
+		File list = new File("Ebooks");		//hardcode book files
 		this.db = new ArrayList<Page>();
 		this.serialID = 0;
 
+		//populates list with book contents
 		for (File f : list.listFiles()) {
 			Page p = create(f);
 			db.add(p);

@@ -35,6 +35,8 @@ public class ReadRequest extends Request{
 		if (this.lineNumber >= p.getLines().size() || this.lineNumber <= 0) {
 			return new MessageResponse("Invalid Line Number");
 		}
+		
+		//calculate which posts are new posts
 		Line l = p.getLines().get(this.lineNumber);
 		Set<Integer> readSet = new HashSet<Integer>(readPosts);
 		Set<Integer> lineSet = new HashSet<Integer>();

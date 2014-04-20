@@ -29,7 +29,8 @@ public class DisplayRequest extends Request{
 		if (p == null) {
 			return new MessageResponse("Book and/or page does not exist");
 		}
-
+		
+		//calculating which lines have unread posts
 		List<Character> markList = new ArrayList<Character>(p.getLines().size());
 		
 		Set<Integer> setOfReadPosts = new HashSet<Integer>(this.readPosts);

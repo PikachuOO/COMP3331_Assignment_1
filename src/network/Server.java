@@ -25,6 +25,7 @@ public class Server {
 
 		if (args.length >= 1)
 			serverPort = Integer.parseInt(args[0]);
+		@SuppressWarnings("resource")
 		ServerSocket welcomeSocket = new ServerSocket(serverPort);
 
 		while (true){
@@ -51,15 +52,19 @@ public class Server {
 		}
 
 		public void run () {
+			//new thread runs here
 
 			try {
+				//collect userName and print for log
 				String userName = this.inFromClient.readLine();
 				System.out.println("User " + userName + " connected");
+				this.outToClient.writeBytes("connection established\n");
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
 
 			while (this.connectionSocket.isConnected()) {
+				//loops until socket is closed
 				try {
 					Object request = this.objectsInFromClient.readObject();
 
@@ -101,11 +106,7 @@ public class Server {
 				e.printStackTrace();
 			}
 		}
-
-		private void write(String data) throws IOException {
-			this.outToClient.writeBytes(data + '\n');
-		}
 	}
 
 
-} // end of class TCPServer
+}

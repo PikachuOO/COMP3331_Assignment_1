@@ -34,25 +34,6 @@ public class Line implements Serializable{
 		return this.discussionPost;
 	}
 	
-	public char containsPost(List<Integer> readPostsSerialID) {
-		System.out.println("lineNumber: " + this.lineNumber);
-		System.out.println("discussionPost size" + this.discussionPost.size());
-		if (this.discussionPost.size() == 0) {
-			return ' ';
-		}
-		char mark = ' ';
-		for (DiscussionPost post : this.discussionPost) {
-			for (int readPost : readPostsSerialID) {
-				if (post.getSerialID() == readPost) {
-					mark = 'm';
-				} else {
-					return 'n';
-				}
-			}
-		}
-		return mark;
-	}
-	
 	
 
 }

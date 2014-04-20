@@ -13,6 +13,7 @@ public class Page implements Serializable {
 	
 	public Page(List<String> lines, String book, String page) {
 		this.lines = new ArrayList<Line>();
+		//allocates list of strings into list of line objects
 		for (int i = 0; i < lines.size(); i++) {
 			this.lines.add(new Line(i, lines.get(i)));
 		}
@@ -21,11 +22,8 @@ public class Page implements Serializable {
 	}
 	
 	public void addDiscussionPost(DiscussionPost post) {
-		//System.out.println("adding post");
 		Line l = this.lines.get(post.getLineNumber());
-		//System.out.println("before " + l.getDiscussionPost().size());
 		l.addPost(post);
-		//System.out.println("after " + l.getDiscussionPost().size());
 	}
 	
 	public List<Line> getLines() {
