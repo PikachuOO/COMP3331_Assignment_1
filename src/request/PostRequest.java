@@ -20,7 +20,7 @@ public class PostRequest extends Request{
 	}
 
 	@Override
-	public Response process(Ebook_db db) {
+	public Response process(Ebook_db db, String mode) {
 		Page p = db.search(this.bookName, this.pageNumber);
 		if (p == null) {
 			return new MessageResponse("Book and/or page does not exist");
@@ -28,7 +28,7 @@ public class PostRequest extends Request{
 		if (this.lineNumber >= p.getLines().size() || this.lineNumber <= 0) {
 			return new MessageResponse("Invalid Line Number");
 		}
-		p.addDiscussionPost(new DiscussionPost(db.generateSerialID(), this.userName, this.lineNumber, this.content));
+		p.addDiscussionPost(new DiscussionPost(db.generateSerialID(), this.userName, this.bookName, this.pageNumber, this.lineNumber, this.content));
 		return new MessageResponse("Post Successful");
 	}
 

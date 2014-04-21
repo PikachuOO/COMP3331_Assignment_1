@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import model.DiscussionPost;
 import model.Line;
 import model.Page;
 import request.DisplayRequest;
@@ -20,6 +21,8 @@ import request.PostRequest;
 import request.ReadRequest;
 import request.Request;
 import response.DisplayResponse;
+import response.PingResponse;
+import response.PushNotification;
 import response.ReadResponse;
 
 public class Reader {
@@ -63,66 +66,195 @@ public class Reader {
 
 		try {
 			tcp = new TCP(serverName, serverPort);		//open tcp connection
-		} catch (IOException uhe) {
+		} catch (IOException e) {
 			System.err.println("Could not connect to designated server\n");
 			return;
 		}
 
-		//client keeps track of last visited page, and posts read
-		Page mostRecentPage = null;
-		List<Integer> readPosts = new ArrayList<Integer>();
-		Timer timer = null;
+		//vars push mode uses
+		List<DiscussionPost> postDB = new ArrayList<DiscussionPost>();
 
 		tcp.outToServer.writeBytes(userName + '\n');	//writes username to server for server log
+		tcp.outToServer.writeBytes(mode + '\n');		//writes client operating mode, for server to process
+		tcp.outToServer.flush();
 		String reply = tcp.inFromServer.readLine();
 		System.out.println(reply);
 
-		//Initialization finished
-		//#####################################################################
-
+		//vars both modes use
 		BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-		while (!inFromUser.ready()) {					//loop for client input
+		String clientRequest = "";
+		PassByRef passByRef = new PassByRef();
+		List<Integer> readPosts = new ArrayList<Integer>();
+		Timer serverListener = new Timer();
 
-			String clientRequest = inFromUser.readLine();
+		//Initialization finished
+		//######################################################################
+		System.out.printf("Operating in %s mode\n", mode);
 
+		if (mode.equals("push")) {
+			Object initialisingPosts = tcp.objectsInFromServer.readObject();		//receiving initial list of all posts on server
+			if (initialisingPosts instanceof List) {
+				for (Object post : ((List<?>)initialisingPosts)) {
+					if (post instanceof DiscussionPost) {
+						postDB.add((DiscussionPost) post);
+					}
+				}
+			} else {
+				System.err.println("Something went terribly wrong");
+			}
+		}
+		//after initialise for push, now can listen
+		serverListener.schedule(new ServerListener(tcp, passByRef, postDB, readPosts, mode, userName, pollingInterval), 0);
+
+		while ((clientRequest = inFromUser.readLine()) != null ) {					//loop for client input
 			StringBuilder errorMessage = new StringBuilder();
 
 			//request object is created with the input string
-			Request request = createRequest(clientRequest, userName, mostRecentPage, errorMessage, readPosts);
+			Request request = createRequest(clientRequest, userName, passByRef.currentPage, errorMessage, readPosts);
 
 			if (request == null) {
 				//if input string is invalid, createRequest returns null
 				System.err.println(errorMessage.toString());
 			} else {
-
-				if (request instanceof DisplayRequest) {
-
-				}
-
 				//if request creation is successful, write and wait for response object
 				tcp.objectsOutToServer.writeObject(request);
 				tcp.objectsOutToServer.flush();
-
-				Object response = tcp.objectsInFromServer.readObject();
-
-				if (response instanceof DisplayResponse) {
-					//update the last visited page
-					mostRecentPage = ((DisplayResponse) response).getPage();
-					//once the client receives a DisplayResponse, we can be sure the display request was successful
-
-					if (timer != null) {
-						timer.cancel();
-					}
-					timer = new Timer();
-					timer.scheduleAtFixedRate(new Ping(tcp, userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), readPosts), pollingInterval * 1000, pollingInterval * 1000);
-				}
-				if (response instanceof ReadResponse) {
-					//update the list of read posts
-					readPosts = ((ReadResponse) response).getReadPosts();
-				}
-				//any errors on server side would return response object messageResponse with error description
-				System.out.println(response.toString());
+				//all returning objects are received by the serverListener thread
 			}
+		}
+	}
+
+	private static class PassByRef {
+		private Page currentPage = null;
+	}
+
+	private static class ServerListener extends TimerTask {
+
+		private TCP tcp;
+		private PassByRef passByRef;
+		private List<DiscussionPost> postDB;
+		private List<Integer> readPosts;
+		private String mode;
+		private String userName;
+		private int pollingInterval;
+		private Timer pingThread;
+
+		private boolean pingNotNotified;
+
+		private ServerListener (TCP tcp, PassByRef passByRef, List<DiscussionPost> postDB, List<Integer> readPosts, String mode, String userName, int pollingInterval) {
+			this.tcp = tcp;
+			this.passByRef = passByRef;
+			this.postDB = postDB;
+			this.readPosts = readPosts;
+			this.mode = mode;
+			this.userName = userName;
+			this.pollingInterval = pollingInterval;
+			this.pingThread = null;
+
+			this.pingNotNotified = true;
+		}
+
+		@Override
+		public void run() {
+			Object response = null;
+			try {
+				while ((response = tcp.objectsInFromServer.readObject()) != null ) {
+					if (response instanceof DisplayResponse) {
+						//update the last visited page
+						passByRef.currentPage = ((DisplayResponse) response).getPage();
+						if (mode.equals("push")) {
+							System.out.println(((DisplayResponse) response).toString(passByRef.currentPage.getBookName(), passByRef.currentPage.getPageNumber(), postDB, readPosts));
+						}
+						if (mode.equals("pull")) {
+							System.out.println(((DisplayResponse) response).toString());
+							if (pingThread != null) {
+								pingThread.cancel();
+							}
+							pingThread = new Timer();
+							pingThread.scheduleAtFixedRate(new Ping(tcp, userName, passByRef.currentPage.getBookName(), passByRef.currentPage.getPageNumber(), readPosts), pollingInterval * 1000, pollingInterval * 1000);
+						}
+					} 
+					else if (response instanceof PushNotification) {
+						((PushNotification) response).updateLocalDB(postDB, readPosts);
+						if (this.passByRef.currentPage != null) {
+							System.out.print(((PushNotification) response).toString(passByRef.currentPage.getBookName(), passByRef.currentPage.getPageNumber()));
+						}
+					}
+					else if (response instanceof PingResponse) {
+						if (((PingResponse) response).getStatus() == true && this.pingNotNotified) {
+							System.out.println(response.toString());
+							this.pingNotNotified = false;
+						}
+						else if (((PingResponse) response).getStatus() == false ) {
+							this.pingNotNotified = true;
+						}
+					} else {
+						//any errors on server side would return response object messageResponse with error description
+						System.out.println(response.toString());
+					}
+				}
+			} catch (SocketException e) {
+				System.err.print("Server disconnected\r");
+				System.exit(0);
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private static class Ping extends TimerTask {
+
+		private TCP tcp;
+		private String userName;
+		private String bookName;
+		private int pageNumber;
+		private List<Integer> readPosts;
+		private boolean notNotified;
+
+		private Ping (TCP tcp, String userName, String bookName, int pageNumber, List<Integer> readPosts) {
+			this.tcp = tcp;
+			this.userName = userName;
+			this.bookName = bookName;
+			this.pageNumber = pageNumber;
+			this.readPosts = readPosts;
+			this.notNotified = true;
+		}
+
+		@Override
+		public void run() {
+			try {
+				tcp.objectsOutToServer.writeObject(new PingRequest("ping " + this.bookName + " " + this.pageNumber, this.userName, this.bookName, this.pageNumber, this.readPosts));
+				tcp.objectsOutToServer.flush();
+				//the ping response is received by the server listener thread
+			} catch (SocketException e) {
+				System.err.print("Server disconnected\r");
+				System.exit(0);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private static class TCP {
+		private InetAddress serverIPAddress;
+		private Socket clientSocket;
+		private DataOutputStream outToServer;
+		private BufferedReader inFromServer;
+		private ObjectOutputStream objectsOutToServer;
+		private ObjectInputStream objectsInFromServer;
+
+		TCP (String serverName, int serverPort) throws IOException {
+			this.serverIPAddress = InetAddress.getByName(serverName);
+			this.clientSocket = new Socket(this.serverIPAddress, serverPort);
+			this.outToServer = new DataOutputStream(this.clientSocket.getOutputStream());
+			this.inFromServer = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
+			this.objectsOutToServer = new ObjectOutputStream(clientSocket.getOutputStream());
+			this.objectsInFromServer = new ObjectInputStream(clientSocket.getInputStream());
 		}
 	}
 
@@ -164,67 +296,6 @@ public class Reader {
 			errorMessage.append("invalid Number inputed somewhere!\n");
 		}
 		return request;
-	}
-
-	private static class Ping extends TimerTask {
-
-		private TCP tcp;
-		private String userName;
-		private String bookName;
-		private int pageNumber;
-		private List<Integer> readPosts;
-		private boolean notNotified;
-
-
-		private Ping (TCP tcp, String userName, String bookName, int pageNumber, List<Integer> readPosts) {
-			this.tcp = tcp;
-			this.userName = userName;
-			this.bookName = bookName;
-			this.pageNumber = pageNumber;
-			this.readPosts = readPosts;
-			this.notNotified = true;
-		}
-
-		@Override
-		public void run() {
-			try {
-				tcp.objectsOutToServer.writeObject(new PingRequest("ping " + this.bookName + " " + this.pageNumber, this.userName, this.bookName, this.pageNumber, this.readPosts));
-				Object response = tcp.objectsInFromServer.readObject();
-				
-				if (response != null && this.notNotified) {
-					System.out.println(response.toString());
-					this.notNotified = false;
-				}
-				else if (response == null ) {
-					this.notNotified = true;
-				}
-
-			} catch (IOException e) {
-				System.err.print("Server disconnected\r");
-				System.exit(0);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	private static class TCP {
-		private InetAddress serverIPAddress;
-		private Socket clientSocket;
-		private DataOutputStream outToServer;
-		private BufferedReader inFromServer;
-		private ObjectOutputStream objectsOutToServer;
-		private ObjectInputStream objectsInFromServer;
-
-		TCP (String serverName, int serverPort) throws IOException {
-			this.serverIPAddress = InetAddress.getByName(serverName);
-			this.clientSocket = new Socket(this.serverIPAddress, serverPort);
-			this.outToServer = new DataOutputStream(this.clientSocket.getOutputStream());
-			this.inFromServer = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-			this.objectsOutToServer = new ObjectOutputStream(clientSocket.getOutputStream());
-			this.objectsInFromServer = new ObjectInputStream(clientSocket.getInputStream());
-		}
 	}
 
 }

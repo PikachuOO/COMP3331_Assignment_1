@@ -24,7 +24,7 @@ public  abstract class Request implements Serializable{
 		return this.command;
 	}
 	
-	public abstract Response process(Ebook_db db);
+	public abstract Response process(Ebook_db db, String mode);
 
 	public String getUserName() {
 		return this.userName;

@@ -3,6 +3,9 @@ package network;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 import model.Ebook_db;
 import model.Line;
@@ -11,6 +14,8 @@ import request.DisplayRequest;
 import request.PostRequest;
 import request.ReadRequest;
 import request.Request;
+import response.MessageResponse;
+import response.PushNotification;
 import response.Response;
 
 public class Server {
@@ -18,6 +23,7 @@ public class Server {
 	public static void main(String[] args)throws Exception {
 
 		Ebook_db db = new Ebook_db();
+		List<TCP> pushClients = new Vector<TCP>();
 
 		// see if we do not use default server port
 		int serverPort = 6789; 
@@ -29,7 +35,7 @@ public class Server {
 		ServerSocket welcomeSocket = new ServerSocket(serverPort);
 
 		while (true){
-			new TCP(welcomeSocket.accept(), db).start();
+			new TCP(welcomeSocket.accept(), db, pushClients).start();
 		}
 	}
 
@@ -40,28 +46,41 @@ public class Server {
 		private DataOutputStream outToClient;
 		private ObjectOutputStream objectsOutToClient;
 		private ObjectInputStream objectsInFromClient;
-		private Ebook_db db;
+		private volatile Ebook_db db;
+		private volatile List<TCP> pushClients;
+		private String userName;
+		private String mode;
 
-		private TCP (Socket connectionSocket, Ebook_db db) throws IOException {
+		private TCP (Socket connectionSocket, Ebook_db db, List<TCP> pushClients) throws IOException {
 			this.connectionSocket = connectionSocket;
 			this.inFromClient = new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
 			this.outToClient = new DataOutputStream(this.connectionSocket.getOutputStream());
 			this.objectsOutToClient = new ObjectOutputStream(connectionSocket.getOutputStream());
 			this.objectsInFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 			this.db = db;
+			this.pushClients = pushClients;
+			this.userName = null;
+			this.mode = null;
 		}
 
 		public void run () {
 			//new thread runs here
-			String userName = "";
 			try {
-				//collect userName and print for log
-				userName = this.inFromClient.readLine();
-				System.out.println("User " + userName + " connected");
+				this.userName = this.inFromClient.readLine();		//collect userName and print for log
+				this.mode = this.inFromClient.readLine();			//collect client mode to process 
+				System.out.println("User " + userName + " connected in " + mode +" mode");
 				this.outToClient.writeBytes("connection established\n");
-			} catch (IOException e1) {
-				e1.printStackTrace();
+				
+				if (mode.equals("push")) {
+					this.pushClients.add(this);
+					//TODO if push mode, must download all posts, assume they have no posts at all
+					this.objectsOutToClient.writeObject(this.db.getAllDiscussionPosts());
+				}
+			} catch (IOException e) {
+				System.err.println("Failed to communicate data with client. Closing connection\n");
+				return;
 			}
+			
 
 			while (this.connectionSocket.isConnected()) {
 				//loops until socket is closed
@@ -76,11 +95,26 @@ public class Server {
 						System.out.println(((Request) request).getCommand());
 						
 						//requests process on their own and create their own response object
-						response = ((Request) request).process(db);
+						response = ((Request) request).process(db, mode);
 						
 						//reply to client with the response
 						this.objectsOutToClient.writeObject(response);
 						this.objectsOutToClient.flush();
+						
+						if (request instanceof PostRequest && response.toString().equals("Post Successful")) {
+							if (pushClients.size() == 0) {
+								System.out.println("Push list empty. No action required.");
+							} else {
+								System.out.println("Pushing posts onto post clients");
+								for (TCP tcp : pushClients) {
+									System.out.println("Pushing to: " + tcp.userName);
+									tcp.objectsOutToClient.writeObject(new PushNotification(db.getMostRecentPost()));
+									tcp.objectsOutToClient.flush();
+								}
+							}
+						}
+						
+						
 					} else {
 						System.err.println("Request is not a valid request");
 					}

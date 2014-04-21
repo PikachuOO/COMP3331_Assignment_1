@@ -24,33 +24,40 @@ public class DisplayRequest extends Request{
 	}
 
 	@Override
-	public Response process(Ebook_db db) {
+	public Response process(Ebook_db db, String mode) {
 		Page p = db.search(bookName, pageNumber);
 		if (p == null) {
 			return new MessageResponse("Book and/or page does not exist");
 		}
 		
-		//calculating which lines have unread posts
-		List<Character> markList = new ArrayList<Character>(p.getLines().size());
-		
-		Set<Integer> setOfReadPosts = new HashSet<Integer>(this.readPosts);
-		for (Line l : p.getLines()) {
-			char mark;
-			if (l.getDiscussionPost().size() == 0) {
-				mark = ' ';
-			} else {
-				Set<Integer> setOfLineDiscussionPosts = new HashSet<Integer>();
-				for (DiscussionPost post : l.getDiscussionPost()) {
-					setOfLineDiscussionPosts.add(post.getSerialID());
-				}
-				if (setOfReadPosts.containsAll(setOfLineDiscussionPosts)) {
-					mark = 'm';
+		if (mode.equals("pull")) {
+			
+			//calculating which lines have unread posts
+			List<Character> markList = new ArrayList<Character>(p.getLines().size());
+
+			Set<Integer> setOfReadPosts = new HashSet<Integer>(this.readPosts);
+			for (Line l : p.getLines()) {
+				char mark;
+				if (l.getDiscussionPost().size() == 0) {
+					mark = ' ';
 				} else {
-					mark = 'n';
+					Set<Integer> setOfLineDiscussionPosts = new HashSet<Integer>();
+					for (DiscussionPost post : l.getDiscussionPost()) {
+						setOfLineDiscussionPosts.add(post.getSerialID());
+					}
+					if (setOfReadPosts.containsAll(setOfLineDiscussionPosts)) {
+						mark = 'm';
+					} else {
+						mark = 'n';
+					}
 				}
+				markList.add(mark);
+				
 			}
-			markList.add(mark);	
+			return new DisplayResponse(p, markList);
+		} else {	//PUSH mode
+			return new DisplayResponse(p);
 		}
-		return new DisplayResponse(p, markList);
+		
 	}
 }

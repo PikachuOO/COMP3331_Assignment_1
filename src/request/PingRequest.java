@@ -9,6 +9,7 @@ import model.Ebook_db;
 import model.Line;
 import model.Page;
 import response.MessageResponse;
+import response.PingResponse;
 import response.Response;
 
 public class PingRequest extends Request {
@@ -20,11 +21,10 @@ public class PingRequest extends Request {
 	public PingRequest(String command, String userName, String bookName, int pageNumber, List<Integer> readPosts) {
 		super(command, userName, bookName, pageNumber);
 		this.readPosts = readPosts;
-
 	}
 
 	@Override
-	public Response process(Ebook_db db) {
+	public Response process(Ebook_db db, String mode) {
 		Page p = db.search(bookName, pageNumber);
 		if (p == null) {
 			return new MessageResponse("Book and/or page does not exist");
@@ -38,9 +38,9 @@ public class PingRequest extends Request {
 		}
 		setOfPagePosts.removeAll(setOfReadPosts);
 		if (!setOfPagePosts.isEmpty()) {
-			return new MessageResponse("There are new posts");
+			return new PingResponse(true);
 		}
-		return null;
+		return new PingResponse(false);
 	}
 
 }

@@ -23,7 +23,7 @@ public class ReadResponse implements Response {
 	public String toString() {
 		StringBuilder out = new StringBuilder();
 		for (String s : unreadPosts) {
-			out.append(s);
+			out.append(s + '\n');
 		}
 		return out.toString();
 	}

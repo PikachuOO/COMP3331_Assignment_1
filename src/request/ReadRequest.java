@@ -27,7 +27,7 @@ public class ReadRequest extends Request{
 	}
 
 	@Override
-	public Response process(Ebook_db db) {
+	public Response process(Ebook_db db, String mode) {
 		Page p = db.search(this.bookName, this.pageNumber);
 		if (p == null) {
 			return new MessageResponse("Book and/or page does not exist");
@@ -48,11 +48,11 @@ public class ReadRequest extends Request{
 			return new MessageResponse("There are no new posts here");
 		} else {
 			List<String> unreadPosts = new ArrayList<String>();
-			unreadPosts.add("Book by " + p.getBookName() + ", Page " + p.getPageNumber() + ", Line number " + this.lineNumber + ":\n");
+			unreadPosts.add("Book by " + p.getBookName() + ", Page " + p.getPageNumber() + ", Line number " + this.lineNumber+1 + ":\n");
 			for (int i : lineSet) {
 				for (DiscussionPost post : l.getDiscussionPost()) {
 					if (post.getSerialID() == i) {
-						unreadPosts.add(post.getSerialID() + " " + post.getUserName() + ":\t" + post.getPost());
+						unreadPosts.add(post.toStrings());
 						readPosts.add(post.getSerialID());
 					}
 				}

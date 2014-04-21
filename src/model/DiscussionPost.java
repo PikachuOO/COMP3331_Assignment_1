@@ -6,15 +6,19 @@ public class DiscussionPost implements Serializable{
 	
 	private static final long serialVersionUID = 1L;
 	private final int serialID;
-	private final int lineNumber;
 	private final String userName;
+	private final String bookName;
+	private final int pageNumber;
+	private final int lineNumber;
 	private final String post;
 	
 	
-	public DiscussionPost (int serialID, String userName, int lineNumber, String post) {
+	public DiscussionPost (int serialID, String userName, String bookName, int pageNumber, int lineNumber, String post) {
 		this.serialID = serialID;
-		this.lineNumber = lineNumber;
 		this.userName = userName;
+		this.bookName = bookName;
+		this.pageNumber = pageNumber;
+		this.lineNumber = lineNumber;
 		this.post = post;
 	}
 	
@@ -32,6 +36,18 @@ public class DiscussionPost implements Serializable{
 	
 	public String getPost() {
 		return this.post;
+	}
+	
+	public String toStrings() {
+		return this.getSerialID() + " " + this.getUserName() + ":\t" + this.getPost();
+	}
+
+	public String getBookName() {
+		return bookName;
+	}
+
+	public int getPageNumber() {
+		return pageNumber;
 	}
 
 }

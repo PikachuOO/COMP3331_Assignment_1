@@ -59,7 +59,30 @@ public class Ebook_db {
 		return null;
 	}
 	
-	public int generateSerialID() {
+	public List<DiscussionPost> getAllDiscussionPosts () {
+		List<DiscussionPost> allPosts = new ArrayList<DiscussionPost>();
+		for (Page page : this.db) {
+			for (Line line : page.getLines()) {
+				for (DiscussionPost post : line.getDiscussionPost()) {
+					allPosts.add(post);
+				}
+			}
+		}
+		return allPosts;
+	}
+	
+	public DiscussionPost getMostRecentPost() {
+		//assumes that in order to get to this function, at least one post would have been made
+		DiscussionPost mostRecentPost = getAllDiscussionPosts().get(0);
+		for (DiscussionPost post : getAllDiscussionPosts()) {
+			if (mostRecentPost.getSerialID() != Math.max(mostRecentPost.getSerialID(), post.getSerialID())) {
+				mostRecentPost = post;
+			}
+		}
+		return mostRecentPost;
+	}
+	
+	public synchronized int generateSerialID() {
 		return this.serialID++;
 	}
 
