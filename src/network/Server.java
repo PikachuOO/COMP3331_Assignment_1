@@ -74,7 +74,7 @@ public class Server {
 				this.outToClient.writeBytes("connection established\n");
 				this.outToClient.flush();
 				if (mode.equals("push")) {
-					System.out.println("add to push list");
+					System.out.println(this.userName+" has been added to the push list");
 					this.pushClients.add(this);//add this client to the push list
 					//TODO if push mode, must download all posts, assume they have no posts at all
 					InitialPush pushPosts = new InitialPush();
@@ -83,14 +83,6 @@ public class Server {
 					}
 					this.objectsOutToClient.writeObject(pushPosts);
 					this.objectsOutToClient.flush();
-					//this.objectsOutToClient.writeObject(this.db.getAllDiscussionPosts());
-					/*this.outToClient.writeBytes(String.valueOf(this.db.getAllDiscussionPosts().size()) + "\n");
-					this.outToClient.flush();
-					for (DiscussionPost post : this.db.getAllDiscussionPosts()) {
-						this.objectsOutToClient.writeObject(post);
-						this.objectsOutToClient.flush();
-					}
-					this.objectsOutToClient.flush();*/
 				}
 			} catch (IOException e) {
 				System.err.println("Failed to communicate data with client. Closing connection\n");
@@ -128,8 +120,7 @@ public class Server {
 								}
 							}
 						}
-						
-						
+
 					} else {
 						System.err.println("Request is not a valid request");
 					}
@@ -138,8 +129,17 @@ public class Server {
 					e.printStackTrace();
 				} catch (IOException e) {
 					System.out.println(userName + " Disconnected");
+					if (mode.equals("push")) {
+						this.pushClients.remove(this);
+						System.out.println("Removing this client from push list");
+					}
 					close();
 					return;
+				} catch (Exception e) {
+					if (mode.equals("push")) {
+						this.pushClients.remove(this);
+						System.out.println("Removing this client from push list");
+					}
 				}
 			}
 		}

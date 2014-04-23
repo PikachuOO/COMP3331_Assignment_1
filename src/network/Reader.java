@@ -121,8 +121,7 @@ public class Reader {
 					System.out.println(response.toString());
 				} else {
 					//if request creation is successful, write and wait for response object
-					tcp.objectsOutToServer.writeObject(request);
-					tcp.objectsOutToServer.flush();
+					tcp.writeToStream(request);
 					//all returning objects are received by the serverListener thread
 				}
 			}
@@ -203,7 +202,6 @@ public class Reader {
 				System.exit(0);
 			} catch (EOFException e) {
 				System.err.print("Server disconnected\r");
-				e.printStackTrace();
 				System.exit(0);
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -234,8 +232,7 @@ public class Reader {
 		@Override
 		public void run() {
 			try {
-				tcp.objectsOutToServer.writeObject(new PingRequest("ping " + this.bookName + " " + this.pageNumber, this.userName, this.bookName, this.pageNumber, this.readPosts));
-				tcp.objectsOutToServer.flush();
+				tcp.writeToStream(new PingRequest(this.userName + " pings " + this.bookName + " " + this.pageNumber, this.userName, this.bookName, this.pageNumber, this.readPosts));
 				//the ping response is received by the server listener thread
 			} catch (SocketException e) {
 				System.err.print("Server disconnected\r");
@@ -262,6 +259,11 @@ public class Reader {
 			this.inFromServer = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
 			this.objectsOutToServer = new ObjectOutputStream(clientSocket.getOutputStream());
 			this.objectsInFromServer = new ObjectInputStream(clientSocket.getInputStream());
+		}
+		
+		private synchronized void writeToStream (Object request) throws IOException {
+			this.objectsOutToServer.writeObject(request);
+			this.objectsOutToServer.flush();
 		}
 	}
 
@@ -295,7 +297,6 @@ public class Reader {
 				} else {
 					request = new ReadRequest(userName+" read posts", userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], readPosts);
 				}
-
 			} else {
 				errorMessage.append("Usage: (display [bookName] [pageNumber] | post_to_forum [lineNumber] [content])\n");
 			}
@@ -304,5 +305,4 @@ public class Reader {
 		}
 		return request;
 	}
-
 }
