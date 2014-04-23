@@ -31,6 +31,7 @@ public class DisplayRequest extends Request{
 		}
 		
 		if (mode.equals("pull")) {
+			System.out.println("Querying discussion posts");
 			
 			//calculating which lines have unread posts
 			List<Character> markList = new ArrayList<Character>(p.getLines().size());

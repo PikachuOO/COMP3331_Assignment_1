@@ -28,6 +28,7 @@ public class Line implements Serializable{
 	
 	public void addPost (DiscussionPost post) {
 		this.discussionPost.add(post);
+		System.out.println("Post added to database and given the serial number "+post.getSerialID());
 	}
 	
 	public List<DiscussionPost> getDiscussionPost () {

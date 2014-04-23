@@ -16,7 +16,7 @@ import response.Response;
 public class ReadRequest extends Request{
 
 	private static final long serialVersionUID = 1L;
-	
+
 	private final int lineNumber;
 	private final List<Integer> readPosts;
 
@@ -24,6 +24,35 @@ public class ReadRequest extends Request{
 		super(command, userName, bookName, pageNumber);
 		this.lineNumber = Integer.parseInt(lineNumber)-1;
 		this.readPosts = readPosts;
+	}
+
+	public Response localProcess(List<DiscussionPost> localDB) {
+		List<DiscussionPost> filteredLocalDB = new ArrayList<DiscussionPost>();
+		for (DiscussionPost post : localDB) {
+			if (post.getBookName().equals(this.bookName) && post.getPageNumber() == this.pageNumber && post.getLineNumber() == this.lineNumber) {
+				filteredLocalDB.add(post);
+			}
+		}
+		Set<Integer> filteredLocalDBSet = new HashSet<Integer>();
+		Set<Integer> readPostsSet = new HashSet<Integer>(this.readPosts);
+		for (DiscussionPost post : filteredLocalDB) {
+			filteredLocalDBSet.add(post.getSerialID());
+		}
+		filteredLocalDBSet.removeAll(readPostsSet);
+		if (filteredLocalDBSet.size() == 0) {
+			return new MessageResponse("There are no new posts here");
+		} else {
+			List<String> unreadPosts = new ArrayList<String>();
+			for (int i : filteredLocalDBSet) {
+				for (DiscussionPost post : localDB) {
+					if (post.getSerialID() == i) {
+						unreadPosts.add(post.toStrings());
+						readPosts.add(post.getSerialID());
+					}
+				}
+			}
+			return new ReadResponse(unreadPosts, readPosts);
+		}
 	}
 
 	@Override
@@ -35,7 +64,7 @@ public class ReadRequest extends Request{
 		if (this.lineNumber >= p.getLines().size() || this.lineNumber <= 0) {
 			return new MessageResponse("Invalid Line Number");
 		}
-		
+
 		//calculate which posts are new posts
 		Line l = p.getLines().get(this.lineNumber);
 		Set<Integer> readSet = new HashSet<Integer>(readPosts);

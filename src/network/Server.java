@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import model.DiscussionPost;
 import model.Ebook_db;
 import model.Line;
 import model.Page;
@@ -31,8 +32,8 @@ public class Server {
 
 		if (args.length >= 1)
 			serverPort = Integer.parseInt(args[0]);
-		@SuppressWarnings("resource")
 		ServerSocket welcomeSocket = new ServerSocket(serverPort);
+		System.out.printf("The server is listening on port number [%d]\n", welcomeSocket.getLocalPort());
 
 		while (true){
 			new TCP(welcomeSocket.accept(), db, pushClients).start();
@@ -70,11 +71,18 @@ public class Server {
 				this.mode = this.inFromClient.readLine();			//collect client mode to process 
 				System.out.println("User " + userName + " connected in " + mode +" mode");
 				this.outToClient.writeBytes("connection established\n");
-				
+				this.outToClient.flush();
+				System.out.println("instanceof " + (this.db.getAllDiscussionPosts() instanceof List<?>));
 				if (mode.equals("push")) {
-					this.pushClients.add(this);
+					this.pushClients.add(this);//add this client to the push list
 					//TODO if push mode, must download all posts, assume they have no posts at all
-					this.objectsOutToClient.writeObject(this.db.getAllDiscussionPosts());
+					//this.objectsOutToClient.writeObject(this.db.getAllDiscussionPosts());
+					this.outToClient.writeBytes(String.valueOf(this.db.getAllDiscussionPosts().size()) + '\n');
+					this.outToClient.flush();
+					for (DiscussionPost post : this.db.getAllDiscussionPosts()) {
+						this.objectsOutToClient.writeObject(post);
+					}
+					this.objectsOutToClient.flush();
 				}
 			} catch (IOException e) {
 				System.err.println("Failed to communicate data with client. Closing connection\n");
@@ -91,7 +99,6 @@ public class Server {
 						Response response = null;
 						
 						//server shows client activity
-						System.out.print("User " + ((Request) request).getUserName() + " requests: ");
 						System.out.println(((Request) request).getCommand());
 						
 						//requests process on their own and create their own response object

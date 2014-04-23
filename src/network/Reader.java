@@ -92,8 +92,20 @@ public class Reader {
 		System.out.printf("Operating in %s mode\n", mode);
 
 		if (mode.equals("push")) {
-			Object initialisingPosts = tcp.objectsInFromServer.readObject();		//receiving initial list of all posts on server
+			String num = tcp.inFromServer.readLine();
+			System.out.println(num);
+			for (int i = 0; i < Integer.parseInt(num); i++) {
+				Object post = tcp.objectsInFromServer.readObject();
+				if (post instanceof DiscussionPost) {
+				postDB.add((DiscussionPost) post);
+				}
+			}
+			/*Object initialisingPosts = tcp.objectsInFromServer.readObject();		//receiving initial list of all posts on server
+			System.out.println(initialisingPosts);
 			if (initialisingPosts instanceof List) {
+				if (((List<?>) initialisingPosts).size() != 0) {
+					System.out.println("Downloading posts from server");
+				}
 				for (Object post : ((List<?>)initialisingPosts)) {
 					if (post instanceof DiscussionPost) {
 						postDB.add((DiscussionPost) post);
@@ -101,7 +113,7 @@ public class Reader {
 				}
 			} else {
 				System.err.println("Something went terribly wrong");
-			}
+			}*/
 		}
 		//after initialise for push, now can listen
 		serverListener.schedule(new ServerListener(tcp, passByRef, postDB, readPosts, mode, userName, pollingInterval), 0);
@@ -116,10 +128,14 @@ public class Reader {
 				//if input string is invalid, createRequest returns null
 				System.err.println(errorMessage.toString());
 			} else {
-				//if request creation is successful, write and wait for response object
-				tcp.objectsOutToServer.writeObject(request);
-				tcp.objectsOutToServer.flush();
-				//all returning objects are received by the serverListener thread
+				if (mode.equals("push") && request instanceof ReadRequest) { // if reading posts in push mode
+					
+				} else {
+					//if request creation is successful, write and wait for response object
+					tcp.objectsOutToServer.writeObject(request);
+					tcp.objectsOutToServer.flush();
+					//all returning objects are received by the serverListener thread
+				}
 			}
 		}
 	}
@@ -196,6 +212,10 @@ public class Reader {
 			} catch (SocketException e) {
 				System.err.print("Server disconnected\r");
 				System.exit(0);
+			} catch (EOFException e) {
+				System.err.print("Server disconnected\r");
+				e.printStackTrace();
+				System.exit(0);
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -213,7 +233,6 @@ public class Reader {
 		private String bookName;
 		private int pageNumber;
 		private List<Integer> readPosts;
-		private boolean notNotified;
 
 		private Ping (TCP tcp, String userName, String bookName, int pageNumber, List<Integer> readPosts) {
 			this.tcp = tcp;
@@ -221,7 +240,6 @@ public class Reader {
 			this.bookName = bookName;
 			this.pageNumber = pageNumber;
 			this.readPosts = readPosts;
-			this.notNotified = true;
 		}
 
 		@Override
@@ -266,7 +284,7 @@ public class Reader {
 				if (clientRequest.split(" ").length < 3) {
 					errorMessage.append("Usage: display [bookName] [pageNumber]\n");
 				} else {
-					request = new DisplayRequest(clientRequest, userName, clientRequest.split(" ")[1], Integer.parseInt(clientRequest.split(" ")[2]), readPosts);
+					request = new DisplayRequest(userName+" requests a page", userName, clientRequest.split(" ")[1], Integer.parseInt(clientRequest.split(" ")[2]), readPosts);
 				}
 			}
 			else if (clientRequest.startsWith("post_to_forum")) {
@@ -276,7 +294,7 @@ public class Reader {
 				else if (clientRequest.split(" ").length < 3) {
 					errorMessage.append("Usage: post_to_forum [lineNumber] [content]\n");
 				} else {
-					request = new PostRequest(clientRequest, userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], clientRequest.replaceAll("^\\w* \\w* ", ""));
+					request = new PostRequest(userName+" submits new post", userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], clientRequest.replaceAll("^\\w* \\w* ", ""));
 				}
 			} 
 			else if (clientRequest.startsWith("read_post")) {
@@ -286,7 +304,7 @@ public class Reader {
 				else if (clientRequest.split(" ").length < 2) {
 					errorMessage.append("Usage: read_post [lineNumber]\n");
 				} else {
-					request = new ReadRequest(clientRequest, userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], readPosts);
+					request = new ReadRequest(userName+" read posts", userName, mostRecentPage.getBookName(), mostRecentPage.getPageNumber(), clientRequest.split(" ")[1], readPosts);
 				}
 
 			} else {

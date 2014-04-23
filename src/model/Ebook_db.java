@@ -16,6 +16,9 @@ public class Ebook_db {
 
 	public Ebook_db() throws IOException {
 		File list = new File("Ebooks");		//hardcode book files
+		if (!list.exists()) {				//if system has different relative dir
+			list = new File("../Ebooks");
+		}
 		this.db = new ArrayList<Page>();
 		this.serialID = 0;
 
@@ -24,6 +27,7 @@ public class Ebook_db {
 			Page p = create(f);
 			db.add(p);
 		}
+		System.out.println("The database for discussion posts has been initialised");
 	}
 
 	private Page create (File f) {
