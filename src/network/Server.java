@@ -15,6 +15,7 @@ import request.DisplayRequest;
 import request.PostRequest;
 import request.ReadRequest;
 import request.Request;
+import response.InitialPush;
 import response.MessageResponse;
 import response.PushNotification;
 import response.Response;
@@ -72,17 +73,24 @@ public class Server {
 				System.out.println("User " + userName + " connected in " + mode +" mode");
 				this.outToClient.writeBytes("connection established\n");
 				this.outToClient.flush();
-				System.out.println("instanceof " + (this.db.getAllDiscussionPosts() instanceof List<?>));
 				if (mode.equals("push")) {
+					System.out.println("add to push list");
 					this.pushClients.add(this);//add this client to the push list
 					//TODO if push mode, must download all posts, assume they have no posts at all
+					InitialPush pushPosts = new InitialPush();
+					for (DiscussionPost post : db.getAllDiscussionPosts()) {
+						pushPosts.add(post);
+					}
+					this.objectsOutToClient.writeObject(pushPosts);
+					this.objectsOutToClient.flush();
 					//this.objectsOutToClient.writeObject(this.db.getAllDiscussionPosts());
-					this.outToClient.writeBytes(String.valueOf(this.db.getAllDiscussionPosts().size()) + '\n');
+					/*this.outToClient.writeBytes(String.valueOf(this.db.getAllDiscussionPosts().size()) + "\n");
 					this.outToClient.flush();
 					for (DiscussionPost post : this.db.getAllDiscussionPosts()) {
 						this.objectsOutToClient.writeObject(post);
+						this.objectsOutToClient.flush();
 					}
-					this.objectsOutToClient.flush();
+					this.objectsOutToClient.flush();*/
 				}
 			} catch (IOException e) {
 				System.err.println("Failed to communicate data with client. Closing connection\n");

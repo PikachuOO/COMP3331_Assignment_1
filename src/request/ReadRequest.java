@@ -51,6 +51,7 @@ public class ReadRequest extends Request{
 					}
 				}
 			}
+			System.out.println(unreadPosts.size());
 			return new ReadResponse(unreadPosts, readPosts);
 		}
 	}

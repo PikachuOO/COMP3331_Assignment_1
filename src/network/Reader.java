@@ -21,9 +21,11 @@ import request.PostRequest;
 import request.ReadRequest;
 import request.Request;
 import response.DisplayResponse;
+import response.InitialPush;
 import response.PingResponse;
 import response.PushNotification;
 import response.ReadResponse;
+import response.Response;
 
 public class Reader {
 
@@ -92,28 +94,14 @@ public class Reader {
 		System.out.printf("Operating in %s mode\n", mode);
 
 		if (mode.equals("push")) {
-			String num = tcp.inFromServer.readLine();
-			System.out.println(num);
-			for (int i = 0; i < Integer.parseInt(num); i++) {
-				Object post = tcp.objectsInFromServer.readObject();
-				if (post instanceof DiscussionPost) {
-				postDB.add((DiscussionPost) post);
-				}
+
+			Object initialisation = tcp.objectsInFromServer.readObject();
+			if (initialisation instanceof InitialPush) {
+				postDB = ((InitialPush) initialisation).rebuild();
+				System.out.println("downloading "+postDB.size()+" posts");
 			}
-			/*Object initialisingPosts = tcp.objectsInFromServer.readObject();		//receiving initial list of all posts on server
-			System.out.println(initialisingPosts);
-			if (initialisingPosts instanceof List) {
-				if (((List<?>) initialisingPosts).size() != 0) {
-					System.out.println("Downloading posts from server");
-				}
-				for (Object post : ((List<?>)initialisingPosts)) {
-					if (post instanceof DiscussionPost) {
-						postDB.add((DiscussionPost) post);
-					}
-				}
-			} else {
-				System.err.println("Something went terribly wrong");
-			}*/
+			
+			System.out.println("finished initialising posts db");
 		}
 		//after initialise for push, now can listen
 		serverListener.schedule(new ServerListener(tcp, passByRef, postDB, readPosts, mode, userName, pollingInterval), 0);
@@ -129,7 +117,8 @@ public class Reader {
 				System.err.println(errorMessage.toString());
 			} else {
 				if (mode.equals("push") && request instanceof ReadRequest) { // if reading posts in push mode
-					
+					Response response = ((ReadRequest) request).localProcess(postDB);
+					System.out.println(response.toString());
 				} else {
 					//if request creation is successful, write and wait for response object
 					tcp.objectsOutToServer.writeObject(request);
