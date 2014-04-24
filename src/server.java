@@ -23,7 +23,7 @@ public class server {
 			//after serverport is open, then initialise
 			Ebook_db db = new Ebook_db();
 			List<TCP> pushClients = new Vector<TCP>();
-
+			System.out.println("Ready for clients!");
 			while (true){
 				new TCP(welcomeSocket.accept(), db, pushClients).start();
 			}
@@ -74,7 +74,7 @@ public class server {
 						String data = post.getSerialID() + "|" + post.getUserName() + "|" + post.getBookName() + "|" + post.getPageNumber() + "|" + post.getLineNumber() + "|" + post.getPost();
 						this.outToClient.writeBytes(data+"\n");	//send each posts as a string, and rebuild on the other side
 					}
-					System.out.println("Finished uploading");
+					System.out.println("Finished push initialisation");
 				}
 			} catch (IOException e) {
 				System.err.println("Failed to communicate data with client. Closing connection\n");

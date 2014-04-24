@@ -13,19 +13,33 @@ public class Ebook_db {
 	private int serialID;	//counter to give unique id to discussion posts
 
 	public Ebook_db() throws IOException {
-		File list = new File("Ebooks");		//hardcode book files
+		File list = new File("eBook-pages");		//hardcode book files
 		if (!list.exists()) {				//if system has different relative dir
-			list = new File("../Ebooks");
+			list = new File("../eBook-pages");
+		}
+		if (!list.exists()) {
+			list = new File(System.getProperty("user.dir"));	//if ebook pages are in the immediate directory
 		}
 		this.db = new ArrayList<Page>();
 		this.serialID = 0;
 
 		//populates list with book contents
+		boolean fileCheck = false;
 		for (File f : list.listFiles()) {
-			Page p = create(f);
-			db.add(p);
+			//if statement for if directory contains more than just ebook pages
+			if (f.getName().toLowerCase().contains("_page")) {
+				fileCheck = true;
+				System.out.println("inserting "+f.getName()+"\tinto db");
+				Page p = create(f);
+				db.add(p);
+			}
 		}
-		System.out.println("The database for discussion posts has been initialised");
+		if (!fileCheck) {
+			System.err.println("WARNING\nCheck your Ebooks locations, there are no ebooks to be found!");
+			System.err.println("Place the pages in the immediate directory or in a folder 'eBook-pages' in the immediate directory");
+		} else {
+			System.out.println("The database for discussion posts has been initialised");
+		}
 	}
 
 	private Page create (File f) {
@@ -60,7 +74,7 @@ public class Ebook_db {
 		}
 		return null;
 	}
-	
+
 	public List<DiscussionPost> getAllDiscussionPosts () {
 		List<DiscussionPost> allPosts = new ArrayList<DiscussionPost>();
 		for (Page page : this.db) {
@@ -72,7 +86,7 @@ public class Ebook_db {
 		}
 		return allPosts;
 	}
-	
+
 	public DiscussionPost getMostRecentPost() {
 		//assumes that in order to get to this function, at least one post would have been made
 		DiscussionPost mostRecentPost = getAllDiscussionPosts().get(0);
@@ -83,7 +97,7 @@ public class Ebook_db {
 		}
 		return mostRecentPost;
 	}
-	
+
 	public synchronized int generateSerialID() {
 		return this.serialID++;
 	}
