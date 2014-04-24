@@ -6,11 +6,9 @@ import java.net.*;
 import java.util.List;
 import java.util.Vector;
 
-public class Server {
+public class server {
 
 	public static void main(String[] args)throws Exception {
-		System.out.println(new File("").getAbsolutePath());
-		System.out.println("SERVER");
 
 		// see if we do not use default server port
 		int serverPort = 6789; 
@@ -69,7 +67,7 @@ public class Server {
 				if (mode.equals("push")) {
 					System.out.println(this.userName+" has been added to the push list");
 					this.pushClients.add(this);//add this client to the push list
-					//TODO if push mode, must download all posts, assume they have no posts at all
+					//if push mode, must download all posts, assume they have no posts at all
 					int pushSize = db.getAllDiscussionPosts().size();
 					this.outToClient.writeBytes(pushSize+"\n");	//send the number of posts over
 					for (DiscussionPost post : db.getAllDiscussionPosts()) {

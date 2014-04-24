@@ -1,9 +1,9 @@
 
 /*
  *
- *  client for TCPClient from Kurose and Ross
+ *  Client File
  *
- *  * Usage: java TCPClient [server addr] [server port]
+ *  * Usage: Reader [mode] [polling_interval] [userName] [serverName] [serverPort]
  */
 import java.io.*;
 import java.net.*;
@@ -76,28 +76,30 @@ public class Reader {
 
 		//Initialization finished
 		//######################################################################
-		
+
 		System.out.printf("Operating in %s mode\n", mode);
 
-		if (mode.equals("push")) {
-			int pushSize = Integer.parseInt(tcp.inFromServer.readLine());
-			System.out.println("getting " + pushSize + " posts");
-			for (int i = 0; i < pushSize; i++) {
-				String data = tcp.inFromServer.readLine();
-				String[] components = data.split("\\|");
-				postDB.add(new DiscussionPost(Integer.parseInt(components[0]), components[1], components[2], Integer.parseInt(components[3]), Integer.parseInt(components[4]), components[5]));
+		try {
+			if (mode.equals("push")) {
+				int pushSize = Integer.parseInt(tcp.inFromServer.readLine());
+				System.out.println("downloading " + pushSize + " posts");
+				for (int i = 0; i < pushSize; i++) {
+					String data = tcp.inFromServer.readLine();
+					String[] components = data.split("\\|");
+					postDB.add(new DiscussionPost(Integer.parseInt(components[0]), components[1], components[2], Integer.parseInt(components[3]), Integer.parseInt(components[4]), components[5]));
+				}
+				System.out.println("finished initialising posts db");
 			}
-			System.out.println("finished initialising posts db");
+		} catch (EOFException EOFe) {
+			System.out.println("Error during posts initialisation, shutting down, please restart client");
 		}
 		//after initialise for push, now can listen
 		serverListener.schedule(new ServerListener(tcp, passByRef, postDB, readPosts, mode, userName, pollingInterval), 0);
-
+		System.out.println("Ready for input! :D");
 		while ((clientRequest = inFromUser.readLine()) != null ) {					//loop for client input
 			StringBuilder errorMessage = new StringBuilder();
-
 			//request object is created with the input string
 			Request request = createRequest(clientRequest, userName, passByRef.currentPage, errorMessage, readPosts);
-
 			if (request == null) {
 				//if input string is invalid, createRequest returns null
 				System.err.println(errorMessage.toString());
@@ -128,7 +130,6 @@ public class Reader {
 		private String userName;
 		private int pollingInterval;
 		private Timer pingThread;
-
 		private boolean pingNotNotified;
 
 		private ServerListener (TCP tcp, PassByRef passByRef, List<DiscussionPost> postDB, List<Integer> readPosts, String mode, String userName, int pollingInterval) {
@@ -140,7 +141,6 @@ public class Reader {
 			this.userName = userName;
 			this.pollingInterval = pollingInterval;
 			this.pingThread = null;
-
 			this.pingNotNotified = true;
 		}
 
@@ -149,10 +149,7 @@ public class Reader {
 			Object response = null;
 			try {
 				while ((response = tcp.objectsInFromServer.readObject()) != null ) {
-					if (response instanceof InitialPush) {
-						System.out.println("INITIALPUSH");
-					}
-					else if (response instanceof DisplayResponse) {
+					if (response instanceof DisplayResponse) {
 						//update the last visited page
 						passByRef.currentPage = ((DisplayResponse) response).getPage();
 						if (mode.equals("push")) {
@@ -193,11 +190,10 @@ public class Reader {
 				System.err.print("Server disconnected\r");
 				System.exit(0);
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.print("Server disconnected\r");
+				System.exit(0);
 			}
 		}
 	}
@@ -227,8 +223,8 @@ public class Reader {
 				System.err.print("Server disconnected\r");
 				System.exit(0);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.print("Server disconnected\r");
+				System.exit(0);
 			}
 		}
 	}
@@ -249,7 +245,7 @@ public class Reader {
 			this.inFromServer = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
 			this.objectsInFromServer = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
 		}
-		
+
 		private synchronized void writeToStream (Object request) throws IOException {
 			this.objectsOutToServer.writeObject(request);
 			this.objectsOutToServer.flush();

@@ -12,7 +12,6 @@ public class DiscussionPost implements Serializable{
 	private final int lineNumber;
 	private final String post;
 	
-	
 	public DiscussionPost (int serialID, String userName, String bookName, int pageNumber, int lineNumber, String post) {
 		this.serialID = serialID;
 		this.userName = userName;
