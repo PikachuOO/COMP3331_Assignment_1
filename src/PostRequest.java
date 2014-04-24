@@ -19,7 +19,7 @@ public class PostRequest extends Request{
 		if (p == null) {
 			return new MessageResponse("Book and/or page does not exist");
 		}
-		if (this.lineNumber >= p.getLines().size() || this.lineNumber <= 0) {
+		if (this.lineNumber >= p.getLines().size() || this.lineNumber < 0) {
 			return new MessageResponse("Invalid Line Number");
 		}
 		p.addDiscussionPost(new DiscussionPost(db.generateSerialID(), this.userName, this.bookName, this.pageNumber, this.lineNumber, this.content));
