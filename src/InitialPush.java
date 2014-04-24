@@ -15,12 +15,12 @@ public class InitialPush implements Response {
 	private List<String> posts;
 	
 	public InitialPush () {
-		serialIDs = new ArrayList<Integer>();
-		userNames = new ArrayList<String>();
-		bookNames = new ArrayList<String>();
-		pageNumbers = new ArrayList<Integer>();
-		lineNumbers = new ArrayList<Integer>();
-		posts = new ArrayList<String>();
+		//serialIDs = new ArrayList<Integer>();
+		//userNames = new ArrayList<String>();
+		//bookNames = new ArrayList<String>();
+		//pageNumbers = new ArrayList<Integer>();
+		//lineNumbers = new ArrayList<Integer>();
+		//posts = new ArrayList<String>();
 	}
 	
 	public void add (DiscussionPost post) {

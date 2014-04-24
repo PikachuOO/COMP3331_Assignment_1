@@ -76,16 +76,17 @@ public class Reader {
 
 		//Initialization finished
 		//######################################################################
+		
 		System.out.printf("Operating in %s mode\n", mode);
 
 		if (mode.equals("push")) {
-
-			Object initialisation = tcp.objectsInFromServer.readObject();
-			if (initialisation instanceof InitialPush) {
-				postDB = ((InitialPush) initialisation).rebuild();
-				System.out.println("downloading "+postDB.size()+" posts");
+			int pushSize = Integer.parseInt(tcp.inFromServer.readLine());
+			System.out.println("getting " + pushSize + " posts");
+			for (int i = 0; i < pushSize; i++) {
+				String data = tcp.inFromServer.readLine();
+				String[] components = data.split("\\|");
+				postDB.add(new DiscussionPost(Integer.parseInt(components[0]), components[1], components[2], Integer.parseInt(components[3]), Integer.parseInt(components[4]), components[5]));
 			}
-			
 			System.out.println("finished initialising posts db");
 		}
 		//after initialise for push, now can listen
@@ -148,7 +149,10 @@ public class Reader {
 			Object response = null;
 			try {
 				while ((response = tcp.objectsInFromServer.readObject()) != null ) {
-					if (response instanceof DisplayResponse) {
+					if (response instanceof InitialPush) {
+						System.out.println("INITIALPUSH");
+					}
+					else if (response instanceof DisplayResponse) {
 						//update the last visited page
 						passByRef.currentPage = ((DisplayResponse) response).getPage();
 						if (mode.equals("push")) {
@@ -241,9 +245,9 @@ public class Reader {
 			this.serverIPAddress = InetAddress.getByName(serverName);
 			this.clientSocket = new Socket(this.serverIPAddress, serverPort);
 			this.outToServer = new DataOutputStream(this.clientSocket.getOutputStream());
-			this.inFromServer = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
 			this.objectsOutToServer = new ObjectOutputStream(clientSocket.getOutputStream());
-			this.objectsInFromServer = new ObjectInputStream(clientSocket.getInputStream());
+			this.inFromServer = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
+			this.objectsInFromServer = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
 		}
 		
 		private synchronized void writeToStream (Object request) throws IOException {

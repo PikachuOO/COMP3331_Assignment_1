@@ -9,6 +9,8 @@ import java.util.Vector;
 public class Server {
 
 	public static void main(String[] args)throws Exception {
+		System.out.println(new File("").getAbsolutePath());
+		System.out.println("SERVER");
 
 		// see if we do not use default server port
 		int serverPort = 6789; 
@@ -68,12 +70,13 @@ public class Server {
 					System.out.println(this.userName+" has been added to the push list");
 					this.pushClients.add(this);//add this client to the push list
 					//TODO if push mode, must download all posts, assume they have no posts at all
-					InitialPush pushPosts = new InitialPush();
+					int pushSize = db.getAllDiscussionPosts().size();
+					this.outToClient.writeBytes(pushSize+"\n");	//send the number of posts over
 					for (DiscussionPost post : db.getAllDiscussionPosts()) {
-						pushPosts.add(post);
+						String data = post.getSerialID() + "|" + post.getUserName() + "|" + post.getBookName() + "|" + post.getPageNumber() + "|" + post.getLineNumber() + "|" + post.getPost();
+						this.outToClient.writeBytes(data+"\n");	//send each posts as a string, and rebuild on the other side
 					}
-					this.objectsOutToClient.writeObject(pushPosts);
-					this.objectsOutToClient.flush();
+					System.out.println("Finished uploading");
 				}
 			} catch (IOException e) {
 				System.err.println("Failed to communicate data with client. Closing connection\n");
