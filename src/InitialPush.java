@@ -15,16 +15,16 @@ public class InitialPush implements Response {
 	private List<String> posts;
 	
 	public InitialPush () {
-		//serialIDs = new ArrayList<Integer>();
-		//userNames = new ArrayList<String>();
-		//bookNames = new ArrayList<String>();
-		//pageNumbers = new ArrayList<Integer>();
-		//lineNumbers = new ArrayList<Integer>();
-		//posts = new ArrayList<String>();
+		serialIDs = new ArrayList<Integer>();
+		userNames = new ArrayList<String>();
+		bookNames = new ArrayList<String>();
+		pageNumbers = new ArrayList<Integer>();
+		lineNumbers = new ArrayList<Integer>();
+		posts = new ArrayList<String>();
 	}
 	
 	public void add (DiscussionPost post) {
-		/*assert((this.serialIDs.size()|
+		assert((this.serialIDs.size()|
 				this.userNames.size()|
 				this.bookNames.size()|
 				this.pageNumbers.size()|
@@ -35,7 +35,7 @@ public class InitialPush implements Response {
 				this.bookNames.size()|
 				this.pageNumbers.size()|
 				this.lineNumbers.size()|
-				this.posts.size()));*/
+				this.posts.size()));
 		this.serialIDs.add(post.getSerialID());
 		this.userNames.add(post.getUserName());
 		this.bookNames.add(post.getBookName());
